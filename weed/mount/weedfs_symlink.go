@@ -3,6 +3,7 @@ package mount
 import (
 	"context"
 	"fmt"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"os"
 	"syscall"
 	"time"
@@ -16,7 +17,8 @@ import (
 
 /** Create a symbolic link */
 func (wfs *WFS) Symlink(cancel <-chan struct{}, header *fuse.InHeader, target string, name string, out *fuse.EntryOut) (code fuse.Status) {
-
+	stats.FuseRequestCounter.WithLabelValues("symlink").Inc()
+	start := time.Now()
 	if wfs.IsOverQuota {
 		return fuse.Status(syscall.ENOSPC)
 	}
@@ -69,7 +71,7 @@ func (wfs *WFS) Symlink(cancel <-chan struct{}, header *fuse.InHeader, target st
 	inode := wfs.inodeToPath.Lookup(entryFullPath, request.Entry.Attributes.Crtime, false, false, 0, true)
 
 	wfs.outputPbEntry(out, inode, request.Entry)
-
+	stats.FuseRequestCost.WithLabelValues("symlink").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/hanwen/go-fuse/v2/fuse"
 	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"github.com/seaweedfs/seaweedfs/weed/pb/filer_pb"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"math"
 	"time"
 )
@@ -18,7 +19,8 @@ type statsCache struct {
 }
 
 func (wfs *WFS) StatFs(cancel <-chan struct{}, in *fuse.InHeader, out *fuse.StatfsOut) (code fuse.Status) {
-
+	stats.FuseRequestCounter.WithLabelValues("statFs").Inc()
+	start := time.Now()
 	// glog.V(4).Infof("reading fs stats")
 
 	if wfs.stats.lastChecked < time.Now().Unix()-20 {
@@ -110,6 +112,6 @@ func (wfs *WFS) StatFs(cancel <-chan struct{}, in *fuse.InHeader, out *fuse.Stat
 	// Report the maximum length of a name and the minimum fragment size
 	out.NameLen = 1024
 	out.Frsize = uint32(blockSize)
-
+	stats.FuseRequestCost.WithLabelValues("statFs").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/pb/filer_pb"
 	"github.com/seaweedfs/seaweedfs/weed/pb/mount_pb"
 	"github.com/seaweedfs/seaweedfs/weed/security"
+	stats2 "github.com/seaweedfs/seaweedfs/weed/stats"
 	"github.com/seaweedfs/seaweedfs/weed/storage/types"
 	"google.golang.org/grpc/reflection"
 
@@ -280,6 +281,7 @@ func RunMount(option *MountOptions, umask os.FileMode) bool {
 	glog.V(0).Infof("mounted %s%s to %v", *option.filer, mountRoot, dir)
 	glog.V(0).Infof("This is SeaweedFS version %s %s %s", util.Version(), runtime.GOOS, runtime.GOARCH)
 
+	go stats2.StartMetricsServer(*option.metricsHttpIp, *option.metricsHttpPort)
 	server.Serve()
 
 	return true

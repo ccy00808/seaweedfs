@@ -3,8 +3,10 @@ package mount
 import (
 	"bytes"
 	"fmt"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"io"
+	"time"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
 
@@ -37,6 +39,7 @@ import (
  * @param fi file information
  */
 func (wfs *WFS) Read(cancel <-chan struct{}, in *fuse.ReadIn, buff []byte) (fuse.ReadResult, fuse.Status) {
+	start := time.Now()
 	fh := wfs.GetHandle(FileHandleId(in.Fh))
 	if fh == nil {
 		return nil, fuse.ENOENT
@@ -69,7 +72,10 @@ func (wfs *WFS) Read(cancel <-chan struct{}, in *fuse.ReadIn, buff []byte) (fuse
 		}
 	}
 
-	return fuse.ReadResultData(buff[:totalRead]), fuse.OK
+	result := fuse.ReadResultData(buff[:totalRead])
+	stats.FuseThoughput.WithLabelValues("read").Add(float64(totalRead))
+	stats.FuseRequestCost.WithLabelValues("read").Observe(float64(time.Since(start).Microseconds()))
+	return result, fuse.OK
 }
 
 func readDataByFileHandle(buff []byte, fhIn *FileHandle, offset int64) (int64, error) {

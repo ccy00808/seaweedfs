@@ -6,9 +6,11 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/filer"
 	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"github.com/seaweedfs/seaweedfs/weed/mount/meta_cache"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"math"
 	"sync"
+	"time"
 )
 
 type DirectoryHandleId uint64
@@ -83,11 +85,13 @@ func (wfs *WFS) ReleaseDirectoryHandle(dhid DirectoryHandleId) {
  * passed to readdir, releasedir and fsyncdir.
  */
 func (wfs *WFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenOut) (code fuse.Status) {
+	start := time.Now()
 	if !wfs.inodeToPath.HasInode(input.NodeId) {
 		return fuse.ENOENT
 	}
 	dhid, _ := wfs.AcquireDirectoryHandle()
 	out.Fh = uint64(dhid)
+	stats.FuseRequestCost.WithLabelValues("opendir").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 }
 
@@ -97,7 +101,9 @@ func (wfs *WFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.Op
  * path parameter will be NULL.
  */
 func (wfs *WFS) ReleaseDir(input *fuse.ReleaseIn) {
+	start := time.Now()
 	wfs.ReleaseDirectoryHandle(DirectoryHandleId(input.Fh))
+	stats.FuseRequestCost.WithLabelValues("releasedir").Observe(float64(time.Since(start).Microseconds()))
 }
 
 /** Synchronize directory contents
@@ -136,6 +142,7 @@ func (wfs *WFS) ReadDirPlus(cancel <-chan struct{}, input *fuse.ReadIn, out *fus
 }
 
 func (wfs *WFS) doReadDirectory(input *fuse.ReadIn, out *fuse.DirEntryList, isPlusMode bool) fuse.Status {
+	start := time.Now()
 	dh := wfs.GetDirectoryHandle(DirectoryHandleId(input.Fh))
 	if input.Offset == 0 {
 		dh.reset()
@@ -233,6 +240,6 @@ func (wfs *WFS) doReadDirectory(input *fuse.ReadIn, out *fuse.DirEntryList, isPl
 	if !isEarlyTerminated {
 		dh.isFinished = true
 	}
-
+	stats.FuseRequestCost.WithLabelValues("readdir").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 }

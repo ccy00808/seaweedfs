@@ -3,6 +3,7 @@ package mount
 import (
 	"context"
 	"fmt"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"os"
 	"strings"
 	"syscall"
@@ -23,6 +24,7 @@ import (
  * */
 func (wfs *WFS) Mkdir(cancel <-chan struct{}, in *fuse.MkdirIn, name string, out *fuse.EntryOut) (code fuse.Status) {
 
+	start := time.Now()
 	if wfs.IsOverQuota {
 		return fuse.Status(syscall.ENOSPC)
 	}
@@ -84,7 +86,7 @@ func (wfs *WFS) Mkdir(cancel <-chan struct{}, in *fuse.MkdirIn, name string, out
 	inode := wfs.inodeToPath.Lookup(entryFullPath, newEntry.Attributes.Crtime, true, false, 0, true)
 
 	wfs.outputPbEntry(out, inode, newEntry)
-
+	stats.FuseRequestCost.WithLabelValues("mkdir").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 
 }
@@ -92,6 +94,7 @@ func (wfs *WFS) Mkdir(cancel <-chan struct{}, in *fuse.MkdirIn, name string, out
 /** Remove a directory */
 func (wfs *WFS) Rmdir(cancel <-chan struct{}, header *fuse.InHeader, name string) (code fuse.Status) {
 
+	start := time.Now()
 	if name == "." {
 		return fuse.Status(syscall.EINVAL)
 	}
@@ -119,6 +122,7 @@ func (wfs *WFS) Rmdir(cancel <-chan struct{}, header *fuse.InHeader, name string
 	wfs.metaCache.DeleteEntry(context.Background(), entryFullPath)
 	wfs.inodeToPath.RemovePath(entryFullPath)
 
+	stats.FuseRequestCost.WithLabelValues("rmdir").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 
 }

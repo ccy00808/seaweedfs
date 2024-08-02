@@ -280,6 +280,28 @@ var (
 			Help:      "Bucketed histogram of s3 time to first byte request processing time.",
 			Buckets:   prometheus.ExponentialBuckets(0.001, 2, 27),
 		}, []string{"type", "bucket"})
+	FuseThoughput = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: Namespace,
+			Subsystem: "fuse",
+			Name:      "throughput",
+			Help:      "fuse throughput.",
+		}, []string{"type"})
+	FuseRequestCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: Namespace,
+			Subsystem: "fuse",
+			Name:      "request",
+			Help:      "fuse request counter.",
+		}, []string{"type"})
+	FuseRequestCost = prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Namespace:  Namespace,
+			Subsystem:  "fuse",
+			Name:       "request_cost",
+			Help:       "fuse request cost.",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.001, 0.99: 0.001},
+		}, []string{"type"})
 )
 
 func init() {
@@ -318,6 +340,9 @@ func init() {
 	Gather.MustRegister(S3HandlerCounter)
 	Gather.MustRegister(S3RequestHistogram)
 	Gather.MustRegister(S3TimeToFirstByteHistogram)
+	Gather.MustRegister(FuseRequestCounter)
+	Gather.MustRegister(FuseThoughput)
+	Gather.MustRegister(FuseRequestCost)
 }
 
 func LoopPushingMetric(name, instance, addr string, intervalSeconds int) {

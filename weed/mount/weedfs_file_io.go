@@ -2,6 +2,8 @@ package mount
 
 import (
 	"github.com/hanwen/go-fuse/v2/fuse"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
+	"time"
 )
 
 /**
@@ -61,6 +63,8 @@ import (
 	 * @param fi file information
 */
 func (wfs *WFS) Open(cancel <-chan struct{}, in *fuse.OpenIn, out *fuse.OpenOut) (status fuse.Status) {
+	stats.FuseRequestCounter.WithLabelValues("open").Inc()
+	start := time.Now()
 	var fileHandle *FileHandle
 	fileHandle, status = wfs.AcquireHandle(in.NodeId, in.Flags, in.Uid, in.Gid)
 	if status == fuse.OK {
@@ -68,6 +72,7 @@ func (wfs *WFS) Open(cancel <-chan struct{}, in *fuse.OpenIn, out *fuse.OpenOut)
 		out.OpenFlags = in.Flags
 		// TODO https://github.com/libfuse/libfuse/blob/master/include/fuse_common.h#L64
 	}
+	stats.FuseRequestCost.WithLabelValues("open").Observe(float64(time.Since(start).Microseconds()))
 	return status
 }
 
@@ -97,5 +102,7 @@ func (wfs *WFS) Open(cancel <-chan struct{}, in *fuse.OpenIn, out *fuse.OpenOut)
  * @param fi file information
  */
 func (wfs *WFS) Release(cancel <-chan struct{}, in *fuse.ReleaseIn) {
+	start := time.Now()
 	wfs.ReleaseHandle(FileHandleId(in.Fh))
+	stats.FuseRequestCost.WithLabelValues("release").Observe(float64(time.Since(start).Microseconds()))
 }

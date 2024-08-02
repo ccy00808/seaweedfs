@@ -3,6 +3,7 @@ package mount
 import (
 	"context"
 	"fmt"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"syscall"
 	"time"
 
@@ -36,7 +37,8 @@ func (wfs *WFS) Create(cancel <-chan struct{}, in *fuse.CreateIn, name string, o
  * regular files that will be called instead.
  */
 func (wfs *WFS) Mknod(cancel <-chan struct{}, in *fuse.MknodIn, name string, out *fuse.EntryOut) (code fuse.Status) {
-
+	stats.FuseRequestCounter.WithLabelValues("mknode").Inc()
+	start := time.Now()
 	if wfs.IsOverQuota {
 		return fuse.Status(syscall.ENOSPC)
 	}
@@ -105,14 +107,15 @@ func (wfs *WFS) Mknod(cancel <-chan struct{}, in *fuse.MknodIn, name string, out
 	inode = wfs.inodeToPath.Lookup(entryFullPath, newEntry.Attributes.Crtime, false, false, inode, true)
 
 	wfs.outputPbEntry(out, inode, newEntry)
-
+	stats.FuseRequestCost.WithLabelValues("mknode").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 
 }
 
 /** Remove a file */
 func (wfs *WFS) Unlink(cancel <-chan struct{}, header *fuse.InHeader, name string) (code fuse.Status) {
-
+	stats.FuseRequestCounter.WithLabelValues("unlink").Inc()
+	start := time.Now()
 	dirFullPath, code := wfs.inodeToPath.GetPath(header.NodeId)
 	if code != fuse.OK {
 		if code == fuse.ENOENT {
@@ -150,7 +153,7 @@ func (wfs *WFS) Unlink(cancel <-chan struct{}, header *fuse.InHeader, name strin
 	}
 
 	wfs.inodeToPath.RemovePath(entryFullPath)
-
+	stats.FuseRequestCost.WithLabelValues("unlink").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 
 }

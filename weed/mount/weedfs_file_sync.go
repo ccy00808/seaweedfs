@@ -10,6 +10,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/filer"
 	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"github.com/seaweedfs/seaweedfs/weed/pb/filer_pb"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 )
 
@@ -91,7 +92,8 @@ func (wfs *WFS) Fsync(cancel <-chan struct{}, in *fuse.FsyncIn) (code fuse.Statu
 }
 
 func (wfs *WFS) doFlush(fh *FileHandle, uid, gid uint32) fuse.Status {
-
+	stats.FuseRequestCounter.WithLabelValues("flush").Inc()
+	start := time.Now()
 	// flush works at fh level
 	fileFullPath := fh.FullPath()
 	dir, name := fileFullPath.DirAndName()
@@ -179,6 +181,6 @@ func (wfs *WFS) doFlush(fh *FileHandle, uid, gid uint32) fuse.Status {
 	if IsDebugFileReadWrite {
 		fh.mirrorFile.Sync()
 	}
-
+	stats.FuseRequestCost.WithLabelValues("flush").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 }

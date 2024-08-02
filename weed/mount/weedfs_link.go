@@ -2,6 +2,7 @@ package mount
 
 import (
 	"context"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"syscall"
 	"time"
 
@@ -25,6 +26,8 @@ When creating a link:
 
 /** Create a hard link to a file */
 func (wfs *WFS) Link(cancel <-chan struct{}, in *fuse.LinkIn, name string, out *fuse.EntryOut) (code fuse.Status) {
+	stats.FuseRequestCounter.WithLabelValues("link").Inc()
+	start := time.Now()
 	if wfs.IsOverQuota {
 		return fuse.Status(syscall.ENOSPC)
 	}
@@ -112,6 +115,6 @@ func (wfs *WFS) Link(cancel <-chan struct{}, in *fuse.LinkIn, name string, out *
 	wfs.inodeToPath.AddPath(oldEntry.Attributes.Inode, newEntryPath)
 
 	wfs.outputPbEntry(out, oldEntry.Attributes.Inode, request.Entry)
-
+	stats.FuseRequestCost.WithLabelValues("link").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 }

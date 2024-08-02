@@ -33,6 +33,8 @@ type MountOptions struct {
 	localSocket        *string
 	disableXAttr       *bool
 	extraOptions       []string
+	metricsHttpPort    *int
+	metricsHttpIp      *string
 }
 
 var (
@@ -70,6 +72,8 @@ func init() {
 	mountOptions.debugPort = cmdMount.Flag.Int("debug.port", 6061, "http port for debugging")
 	mountOptions.localSocket = cmdMount.Flag.String("localSocket", "", "default to /tmp/seaweedfs-mount-<mount_dir_hash>.sock")
 	mountOptions.disableXAttr = cmdMount.Flag.Bool("disableXAttr", false, "disable xattr")
+	mountOptions.metricsHttpPort = cmdMount.Flag.Int("metricsPort", 0, "Prometheus metrics listen port")
+	mountOptions.metricsHttpIp = cmdMount.Flag.String("metricsIp", "", "metrics listen ip. If empty, default to same as -ip.bind option.")
 
 	mountCpuProfile = cmdMount.Flag.String("cpuprofile", "", "cpu profile output file")
 	mountMemProfile = cmdMount.Flag.String("memprofile", "", "memory profile output file")
