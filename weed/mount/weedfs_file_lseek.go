@@ -1,8 +1,10 @@
 package mount
 
 import (
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"syscall"
+	"time"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
 
@@ -20,6 +22,7 @@ const (
 // Lseek finds next data or hole segments after the specified offset
 // See https://man7.org/linux/man-pages/man2/lseek.2.html
 func (wfs *WFS) Lseek(cancel <-chan struct{}, in *fuse.LseekIn, out *fuse.LseekOut) fuse.Status {
+	start := time.Now()
 	// not a documented feature
 	if in.Padding != 0 {
 		return fuse.EINVAL
@@ -68,6 +71,6 @@ func (wfs *WFS) Lseek(cancel <-chan struct{}, in *fuse.LseekIn, out *fuse.LseekO
 	} else {
 		out.Offset = uint64(fileSize)
 	}
-
+	stats.FuseRequestCost.WithLabelValues("lseek").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 }

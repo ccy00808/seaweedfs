@@ -1,9 +1,11 @@
 package mount
 
 import (
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
 	sys "golang.org/x/sys/unix"
@@ -20,7 +22,8 @@ const (
 // number of bytes. If the buffer is too small, return ERANGE,
 // with the required buffer size.
 func (wfs *WFS) GetXAttr(cancel <-chan struct{}, header *fuse.InHeader, attr string, dest []byte) (size uint32, code fuse.Status) {
-
+	stats.FuseRequestCounter.WithLabelValues("getxattr").Inc()
+	start := time.Now()
 	if wfs.option.DisableXAttr {
 		return 0, fuse.Status(syscall.ENOTSUP)
 	}
@@ -56,6 +59,7 @@ func (wfs *WFS) GetXAttr(cancel <-chan struct{}, header *fuse.InHeader, attr str
 	}
 	copy(dest, data)
 
+	stats.FuseRequestCost.WithLabelValues("getxattr").Observe(float64(time.Since(start).Microseconds()))
 	return uint32(len(data)), fuse.OK
 }
 
@@ -75,7 +79,8 @@ func (wfs *WFS) GetXAttr(cancel <-chan struct{}, header *fuse.InHeader, attr str
 //	       Perform a pure replace operation, which fails if the named
 //	       attribute does not already exist.
 func (wfs *WFS) SetXAttr(cancel <-chan struct{}, input *fuse.SetXAttrIn, attr string, data []byte) fuse.Status {
-
+	stats.FuseRequestCounter.WithLabelValues("setxattr").Inc()
+	start := time.Now()
 	if wfs.option.DisableXAttr {
 		return fuse.Status(syscall.ENOTSUP)
 	}
@@ -137,7 +142,9 @@ func (wfs *WFS) SetXAttr(cancel <-chan struct{}, input *fuse.SetXAttrIn, attr st
 		return fuse.OK
 	}
 
-	return wfs.saveEntry(path, entry)
+	result := wfs.saveEntry(path, entry)
+	stats.FuseRequestCost.WithLabelValues("getxattr").Observe(float64(time.Since(start).Microseconds()))
+	return result
 
 }
 
@@ -145,7 +152,8 @@ func (wfs *WFS) SetXAttr(cancel <-chan struct{}, input *fuse.SetXAttrIn, attr st
 // slice, and return the number of bytes. If the buffer is too
 // small, return ERANGE, with the required buffer size.
 func (wfs *WFS) ListXAttr(cancel <-chan struct{}, header *fuse.InHeader, dest []byte) (n uint32, code fuse.Status) {
-
+	stats.FuseRequestCounter.WithLabelValues("listxattr").Inc()
+	start := time.Now()
 	if wfs.option.DisableXAttr {
 		return 0, fuse.Status(syscall.ENOTSUP)
 	}
@@ -174,12 +182,14 @@ func (wfs *WFS) ListXAttr(cancel <-chan struct{}, header *fuse.InHeader, dest []
 
 	copy(dest, data)
 
+	stats.FuseRequestCost.WithLabelValues("listxattr").Observe(float64(time.Since(start).Microseconds()))
 	return uint32(len(data)), fuse.OK
 }
 
 // RemoveXAttr removes an extended attribute.
 func (wfs *WFS) RemoveXAttr(cancel <-chan struct{}, header *fuse.InHeader, attr string) fuse.Status {
-
+	stats.FuseRequestCounter.WithLabelValues("removexattr").Inc()
+	start := time.Now()
 	if wfs.option.DisableXAttr {
 		return fuse.Status(syscall.ENOTSUP)
 	}
@@ -210,5 +220,7 @@ func (wfs *WFS) RemoveXAttr(cancel <-chan struct{}, header *fuse.InHeader, attr 
 
 	delete(entry.Extended, XATTR_PREFIX+attr)
 
-	return wfs.saveEntry(path, entry)
+	result := wfs.saveEntry(path, entry)
+	stats.FuseRequestCost.WithLabelValues("removexattr").Observe(float64(time.Since(start).Microseconds()))
+	return result
 }

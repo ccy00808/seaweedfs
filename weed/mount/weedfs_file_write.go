@@ -2,6 +2,7 @@ package mount
 
 import (
 	"github.com/hanwen/go-fuse/v2/fuse"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"net/http"
 	"syscall"
@@ -35,7 +36,7 @@ import (
  * @param fi file information
  */
 func (wfs *WFS) Write(cancel <-chan struct{}, in *fuse.WriteIn, data []byte) (written uint32, code fuse.Status) {
-
+	start := time.Now()
 	if wfs.IsOverQuota {
 		return 0, fuse.Status(syscall.ENOSPC)
 	}
@@ -77,6 +78,7 @@ func (wfs *WFS) Write(cancel <-chan struct{}, in *fuse.WriteIn, data []byte) (wr
 		// print("+")
 		fh.mirrorFile.WriteAt(data, offset)
 	}
-
+	stats.FuseThoughput.WithLabelValues("write").Add(float64(written))
+	stats.FuseRequestCost.WithLabelValues("write").Observe(float64(time.Since(start).Microseconds()))
 	return written, fuse.OK
 }

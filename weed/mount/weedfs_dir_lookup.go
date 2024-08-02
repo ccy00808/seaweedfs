@@ -2,6 +2,8 @@ package mount
 
 import (
 	"context"
+	"github.com/seaweedfs/seaweedfs/weed/stats"
+	"time"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
 
@@ -17,7 +19,7 @@ import (
 // name) pair.
 
 func (wfs *WFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name string, out *fuse.EntryOut) (code fuse.Status) {
-
+	start := time.Now()
 	if s := checkName(name); s != fuse.OK {
 		return s
 	}
@@ -67,7 +69,7 @@ func (wfs *WFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 	}
 
 	wfs.outputFilerEntry(out, inode, localEntry)
-
+	stats.FuseRequestCost.WithLabelValues("lookup").Observe(float64(time.Since(start).Microseconds()))
 	return fuse.OK
 
 }
