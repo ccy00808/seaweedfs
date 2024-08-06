@@ -37,6 +37,8 @@ func (wfs *WFS) Create(cancel <-chan struct{}, in *fuse.CreateIn, name string, o
  */
 func (wfs *WFS) Mknod(cancel <-chan struct{}, in *fuse.MknodIn, name string, out *fuse.EntryOut) (code fuse.Status) {
 
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
+	glog.V(4).Infof("******** Mknod:" + entry.GetName() + " " + name)
 	if wfs.IsOverQuota {
 		return fuse.Status(syscall.ENOSPC)
 	}
@@ -123,6 +125,7 @@ func (wfs *WFS) Unlink(cancel <-chan struct{}, header *fuse.InHeader, name strin
 	entryFullPath := dirFullPath.Child(name)
 
 	entry, code := wfs.maybeLoadEntry(entryFullPath)
+	glog.V(4).Infof("******** Unlink:" + string(dirFullPath) + ":" + entry.GetName())
 	if code != fuse.OK {
 		if code == fuse.ENOENT {
 			return fuse.OK

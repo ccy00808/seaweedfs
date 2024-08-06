@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"io"
+	"strconv"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
 
@@ -37,6 +38,8 @@ import (
  * @param fi file information
  */
 func (wfs *WFS) Read(cancel <-chan struct{}, in *fuse.ReadIn, buff []byte) (fuse.ReadResult, fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
+	glog.V(4).Infof("******** Read:" + entry.GetName() + ":" + strconv.FormatUint(in.Fh, 10))
 	fh := wfs.GetHandle(FileHandleId(in.Fh))
 	if fh == nil {
 		return nil, fuse.ENOENT

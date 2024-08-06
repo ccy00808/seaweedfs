@@ -8,6 +8,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/mount/meta_cache"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"math"
+	"strconv"
 	"sync"
 )
 
@@ -51,6 +52,7 @@ func (wfs *WFS) AcquireDirectoryHandle() (DirectoryHandleId, *DirectoryHandle) {
 	dh := new(DirectoryHandle)
 	dh.reset()
 	wfs.dhmap.dir2inode[DirectoryHandleId(fh)] = dh
+	glog.V(4).Infof("******** AcquireDirectoryHandle:" + strconv.FormatUint(uint64(fh), 10))
 	return DirectoryHandleId(fh), dh
 }
 
@@ -63,6 +65,7 @@ func (wfs *WFS) GetDirectoryHandle(dhid DirectoryHandleId) *DirectoryHandle {
 	dh := new(DirectoryHandle)
 	dh.reset()
 	wfs.dhmap.dir2inode[dhid] = dh
+	glog.V(4).Infof("******** GetDirectoryHandle:" + strconv.FormatUint(uint64(dhid), 10))
 	return dh
 }
 
@@ -70,6 +73,7 @@ func (wfs *WFS) ReleaseDirectoryHandle(dhid DirectoryHandleId) {
 	wfs.dhmap.Lock()
 	defer wfs.dhmap.Unlock()
 	delete(wfs.dhmap.dir2inode, dhid)
+	glog.V(4).Infof("******** ReleaseDirectoryHandle:" + strconv.FormatUint(uint64(dhid), 10))
 }
 
 // Directory handling
@@ -83,11 +87,13 @@ func (wfs *WFS) ReleaseDirectoryHandle(dhid DirectoryHandleId) {
  * passed to readdir, releasedir and fsyncdir.
  */
 func (wfs *WFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenOut) (code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(input.NodeId)
 	if !wfs.inodeToPath.HasInode(input.NodeId) {
 		return fuse.ENOENT
 	}
 	dhid, _ := wfs.AcquireDirectoryHandle()
 	out.Fh = uint64(dhid)
+	glog.V(4).Infof("******** OpenDir:" + entry.GetName() + ":" + strconv.FormatUint(uint64(dhid), 10))
 	return fuse.OK
 }
 
@@ -97,6 +103,8 @@ func (wfs *WFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.Op
  * path parameter will be NULL.
  */
 func (wfs *WFS) ReleaseDir(input *fuse.ReleaseIn) {
+	_, _, entry, _ := wfs.maybeReadEntry(input.NodeId)
+	glog.V(4).Infof("******** ReleaseDir:" + entry.GetName() + ":" + strconv.FormatUint(input.Fh, 10))
 	wfs.ReleaseDirectoryHandle(DirectoryHandleId(input.Fh))
 }
 
@@ -128,15 +136,20 @@ func (wfs *WFS) FsyncDir(cancel <-chan struct{}, input *fuse.FsyncIn) (code fuse
  * '1'.
  */
 func (wfs *WFS) ReadDir(cancel <-chan struct{}, input *fuse.ReadIn, out *fuse.DirEntryList) (code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(input.NodeId)
+	glog.V(4).Infof("******** ReadDir:" + entry.GetName() + ":" + strconv.FormatUint(input.Fh, 10))
 	return wfs.doReadDirectory(input, out, false)
 }
 
 func (wfs *WFS) ReadDirPlus(cancel <-chan struct{}, input *fuse.ReadIn, out *fuse.DirEntryList) (code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(input.NodeId)
+	glog.V(4).Infof("******** ReadDirPlus:" + entry.GetName() + ":" + strconv.FormatUint(input.Fh, 10))
 	return wfs.doReadDirectory(input, out, true)
 }
 
 func (wfs *WFS) doReadDirectory(input *fuse.ReadIn, out *fuse.DirEntryList, isPlusMode bool) fuse.Status {
 	dh := wfs.GetDirectoryHandle(DirectoryHandleId(input.Fh))
+	glog.V(4).Infof("****** doReadDirctory:" + strconv.FormatUint(input.Offset, 10) + ":" + strconv.FormatUint(dh.entryStreamOffset, 10) + ":" + strconv.FormatUint(uint64(len(dh.entryStream)), 10))
 	if input.Offset == 0 {
 		dh.reset()
 	} else if dh.isFinished && input.Offset >= dh.entryStreamOffset {

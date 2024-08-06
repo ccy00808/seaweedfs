@@ -104,6 +104,7 @@ func (wfs *WFS) Link(cancel <-chan struct{}, in *fuse.LinkIn, name string, out *
 		glog.V(0).Infof("Link %v -> %s: %v", oldEntryPath, newEntryPath, err)
 		return fuse.EIO
 	}
+	glog.V(4).Infof("******** Link:" + oldEntry.GetName() + ":" + newEntryPath.Name())
 
 	wfs.inodeToPath.AddPath(oldEntry.Attributes.Inode, newEntryPath)
 
