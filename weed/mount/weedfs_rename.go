@@ -159,6 +159,7 @@ func (wfs *WFS) Rename(cancel <-chan struct{}, in *fuse.RenameIn, oldName string
 		return
 	}
 	newPath := newDir.Child(newName)
+	glog.V(4).Infof("******** Rename:%s => %s", oldPath, newPath)
 
 	glog.V(4).Infof("dir Rename %s => %s", oldPath, newPath)
 

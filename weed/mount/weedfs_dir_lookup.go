@@ -23,6 +23,7 @@ func (wfs *WFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 	}
 
 	dirPath, code := wfs.inodeToPath.GetPath(header.NodeId)
+	glog.V(4).Infof("******** Lookup:" + dirPath.Name() + " " + name)
 	if code != fuse.OK {
 		return
 	}

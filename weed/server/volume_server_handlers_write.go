@@ -23,6 +23,7 @@ func (vs *VolumeServer) PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vid, fid, _, _, _ := parseURLPath(r.URL.Path)
+	glog.V(4).Infof("******** write path:" + r.URL.Path + " vid:" + vid + " fid:" + fid)
 	volumeId, ve := needle.NewVolumeId(vid)
 	if ve != nil {
 		glog.V(0).Infoln("NewVolumeId error:", ve)

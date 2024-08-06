@@ -18,6 +18,8 @@ type statsCache struct {
 }
 
 func (wfs *WFS) StatFs(cancel <-chan struct{}, in *fuse.InHeader, out *fuse.StatfsOut) (code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
+	glog.V(4).Infof("******** StatFs:" + entry.GetName())
 
 	// glog.V(4).Infof("reading fs stats")
 

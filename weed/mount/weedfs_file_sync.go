@@ -11,6 +11,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"github.com/seaweedfs/seaweedfs/weed/pb/filer_pb"
 	"github.com/seaweedfs/seaweedfs/weed/util"
+	"strconv"
 )
 
 /**
@@ -52,6 +53,8 @@ import (
  * [close]: http://pubs.opengroup.org/onlinepubs/9699919799/functions/close.html
  */
 func (wfs *WFS) Flush(cancel <-chan struct{}, in *fuse.FlushIn) fuse.Status {
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
+	glog.V(4).Infof("******** Flush:" + entry.GetName() + ":" + strconv.FormatUint(in.Fh, 10))
 	fh := wfs.GetHandle(FileHandleId(in.Fh))
 	if fh == nil {
 		return fuse.ENOENT
@@ -80,6 +83,8 @@ func (wfs *WFS) Flush(cancel <-chan struct{}, in *fuse.FlushIn) fuse.Status {
  * @param fi file information
  */
 func (wfs *WFS) Fsync(cancel <-chan struct{}, in *fuse.FsyncIn) (code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
+	glog.V(4).Infof("******** Fsync:" + entry.GetName() + ":" + strconv.FormatUint(in.Fh, 10))
 
 	fh := wfs.GetHandle(FileHandleId(in.Fh))
 	if fh == nil {

@@ -23,6 +23,8 @@ import (
  * */
 func (wfs *WFS) Mkdir(cancel <-chan struct{}, in *fuse.MkdirIn, name string, out *fuse.EntryOut) (code fuse.Status) {
 
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
+	glog.V(4).Infof("******** Mkdir:" + entry.GetName())
 	if wfs.IsOverQuota {
 		return fuse.Status(syscall.ENOSPC)
 	}
@@ -91,6 +93,8 @@ func (wfs *WFS) Mkdir(cancel <-chan struct{}, in *fuse.MkdirIn, name string, out
 
 /** Remove a directory */
 func (wfs *WFS) Rmdir(cancel <-chan struct{}, header *fuse.InHeader, name string) (code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(header.NodeId)
+	glog.V(4).Infof("******** Rmdir:" + entry.GetName())
 
 	if name == "." {
 		return fuse.Status(syscall.EINVAL)

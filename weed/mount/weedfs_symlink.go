@@ -16,6 +16,8 @@ import (
 
 /** Create a symbolic link */
 func (wfs *WFS) Symlink(cancel <-chan struct{}, header *fuse.InHeader, target string, name string, out *fuse.EntryOut) (code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(header.NodeId)
+	glog.V(4).Infof("******** Symlink:" + entry.GetName() + ":" + target + ":" + name)
 
 	if wfs.IsOverQuota {
 		return fuse.Status(syscall.ENOSPC)
@@ -74,6 +76,8 @@ func (wfs *WFS) Symlink(cancel <-chan struct{}, header *fuse.InHeader, target st
 }
 
 func (wfs *WFS) Readlink(cancel <-chan struct{}, header *fuse.InHeader) (out []byte, code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(header.NodeId)
+	glog.V(4).Infof("******** Readlink:" + entry.GetName())
 	entryFullPath, code := wfs.inodeToPath.GetPath(header.NodeId)
 	if code != fuse.OK {
 		return

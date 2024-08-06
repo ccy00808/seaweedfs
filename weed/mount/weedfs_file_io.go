@@ -2,6 +2,8 @@ package mount
 
 import (
 	"github.com/hanwen/go-fuse/v2/fuse"
+	"github.com/seaweedfs/seaweedfs/weed/glog"
+	"strconv"
 )
 
 /**
@@ -61,8 +63,10 @@ import (
 	 * @param fi file information
 */
 func (wfs *WFS) Open(cancel <-chan struct{}, in *fuse.OpenIn, out *fuse.OpenOut) (status fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
 	var fileHandle *FileHandle
 	fileHandle, status = wfs.AcquireHandle(in.NodeId, in.Flags, in.Uid, in.Gid)
+	glog.V(4).Infof("******** Open:" + entry.GetName() + ":" + strconv.FormatUint(uint64(fileHandle.fh), 10))
 	if status == fuse.OK {
 		out.Fh = uint64(fileHandle.fh)
 		out.OpenFlags = in.Flags
@@ -97,5 +101,7 @@ func (wfs *WFS) Open(cancel <-chan struct{}, in *fuse.OpenIn, out *fuse.OpenOut)
  * @param fi file information
  */
 func (wfs *WFS) Release(cancel <-chan struct{}, in *fuse.ReleaseIn) {
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
+	glog.V(4).Infof("******** Release:" + entry.GetName() + ":" + strconv.FormatUint(in.Fh, 10))
 	wfs.ReleaseHandle(FileHandleId(in.Fh))
 }
