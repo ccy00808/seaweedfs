@@ -74,23 +74,6 @@ func (up *UploadPipeline) SaveDataAt(p []byte, off int64, isSequential bool, tsN
 					fullness = chunkFullness
 				}
 			}
-			/*  // this algo generates too many chunks
-			candidateChunkIndex, lowestActivityScore := LogicChunkIndex(-1), int64(math.MaxInt64)
-			for wci, wc := range up.writableChunks {
-				activityScore := wc.ActivityScore()
-				if lowestActivityScore >= activityScore {
-					if lowestActivityScore == activityScore {
-						chunkFullness := wc.WrittenSize()
-						if fullness < chunkFullness {
-							candidateChunkIndex = lci
-							fullness = chunkFullness
-						}
-					}
-					candidateChunkIndex = wci
-					lowestActivityScore = activityScore
-				}
-			}
-			*/
 			up.moveToSealed(up.writableChunks[candidateChunkIndex], candidateChunkIndex)
 			// fmt.Printf("flush chunk %d with %d bytes written\n", logicChunkIndex, fullness)
 		}
@@ -106,12 +89,6 @@ func (up *UploadPipeline) SaveDataAt(p []byte, off int64, isSequential bool, tsN
 		}
 		up.writableChunks[logicChunkIndex] = pageChunk
 	}
-	//if _, foundSealed := up.sealedChunks[logicChunkIndex]; foundSealed {
-	//	println("found already sealed chunk", logicChunkIndex)
-	//}
-	//if _, foundReading := up.activeReadChunks[logicChunkIndex]; foundReading {
-	//	println("found active read chunk", logicChunkIndex)
-	//}
 	n = pageChunk.WriteDataAt(p, off, tsNs)
 	up.maybeMoveToSealed(pageChunk, logicChunkIndex)
 

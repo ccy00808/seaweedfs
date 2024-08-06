@@ -9,11 +9,12 @@ import (
 	"io"
 	"mime"
 	"mime/multipart"
-	"sync"
 	"net/http"
 	"net/textproto"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/seaweedfs/seaweedfs/weed/glog"
@@ -66,9 +67,9 @@ func (uploadResult *UploadResult) ToPbFileChunk(fileId string, offset int64, tsN
 
 var (
 	fileNameEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", "")
-	uploader *Uploader
-	uploaderErr error
-	once sync.Once
+	uploader        *Uploader
+	uploaderErr     error
+	once            sync.Once
 )
 
 // HTTPClient interface for testing
@@ -82,7 +83,7 @@ type Uploader struct {
 }
 
 func NewUploader() (*Uploader, error) {
-	once.Do(func ()  {
+	once.Do(func() {
 		// With Dial context
 		var httpClient *util_http_client.HTTPClient
 		httpClient, uploaderErr = util_http.NewGlobalHttpClient(util_http_client.AddDialContext)
@@ -96,7 +97,7 @@ func NewUploader() (*Uploader, error) {
 	return uploader, uploaderErr
 }
 
-func newUploader(httpClient HTTPClient) (*Uploader) {
+func newUploader(httpClient HTTPClient) *Uploader {
 	return &Uploader{
 		httpClient: httpClient,
 	}
@@ -338,6 +339,7 @@ func (uploader *Uploader) upload_content(fillBufferFunction func(w io.Writer) er
 		glog.V(0).Infoln("error closing body", err)
 		return nil, err
 	}
+	glog.V(4).Infof("********* upload content:" + content_type)
 	if option.BytesBuffer == nil {
 		reqReader = bytes.NewReader(buf.Bytes())
 	} else {
@@ -348,12 +350,20 @@ func (uploader *Uploader) upload_content(fillBufferFunction func(w io.Writer) er
 		glog.V(1).Infof("create upload request %s: %v", option.UploadUrl, postErr)
 		return nil, fmt.Errorf("create upload request %s: %v", option.UploadUrl, postErr)
 	}
+	glog.V(4).Infof("********* upload url:" + option.UploadUrl)
 	req.Header.Set("Content-Type", content_type)
 	for k, v := range option.PairMap {
+		glog.V(4).Infof("********* upload content:" + k + ":" + v)
 		req.Header.Set(k, v)
 	}
 	if option.Jwt != "" {
 		req.Header.Set("Authorization", "BEARER "+string(option.Jwt))
+	}
+	for k, v := range req.Header {
+		glog.V(4).Infof("***** header:" + k)
+		for j := range v {
+			glog.V(4).Infof("\t****** header value:" + strconv.FormatInt(int64(j), 10))
+		}
 	}
 	// print("+")
 	resp, post_err := uploader.httpClient.Do(req)

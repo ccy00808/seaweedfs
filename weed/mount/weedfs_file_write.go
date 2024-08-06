@@ -2,8 +2,10 @@ package mount
 
 import (
 	"github.com/hanwen/go-fuse/v2/fuse"
+	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"net/http"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -56,6 +58,7 @@ func (wfs *WFS) Write(cancel <-chan struct{}, in *fuse.WriteIn, data []byte) (wr
 	if entry == nil {
 		return 0, fuse.OK
 	}
+	glog.V(4).Infof("******** Write:" + entry.GetName() + ":" + strconv.FormatUint(in.Fh, 10))
 
 	entry.Content = nil
 	offset := int64(in.Offset)

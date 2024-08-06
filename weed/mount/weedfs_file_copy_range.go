@@ -3,6 +3,7 @@ package mount
 import (
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
@@ -29,6 +30,8 @@ import (
  * glibc release branches.)
  */
 func (wfs *WFS) CopyFileRange(cancel <-chan struct{}, in *fuse.CopyFileRangeIn) (written uint32, code fuse.Status) {
+	_, _, entry, _ := wfs.maybeReadEntry(in.NodeId)
+	glog.V(4).Infof("******** CopyFileRange:" + entry.GetName() + ":" + strconv.FormatUint(in.FhIn, 10))
 	// flags must equal 0 for this syscall as of now
 	if in.Flags != 0 {
 		return 0, fuse.EINVAL

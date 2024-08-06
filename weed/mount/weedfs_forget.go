@@ -2,6 +2,7 @@ package mount
 
 import (
 	"context"
+	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 )
 
@@ -62,6 +63,8 @@ Side effects: increments the lookup count on success
 
 */
 func (wfs *WFS) Forget(nodeid, nlookup uint64) {
+	_, _, entry, _ := wfs.maybeReadEntry(nodeid)
+	glog.V(4).Infof("******** Forget:" + entry.GetName())
 	wfs.inodeToPath.Forget(nodeid, nlookup, func(dir util.FullPath) {
 		wfs.metaCache.DeleteFolderChildren(context.Background(), dir)
 	})

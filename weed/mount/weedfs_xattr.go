@@ -1,6 +1,7 @@
 package mount
 
 import (
+	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"runtime"
 	"strings"
 	"syscall"
@@ -38,6 +39,7 @@ func (wfs *WFS) GetXAttr(cancel <-chan struct{}, header *fuse.InHeader, attr str
 	}
 
 	_, _, entry, status := wfs.maybeReadEntry(header.NodeId)
+	glog.V(4).Infof("******** GetXAttr:" + entry.GetName())
 	if status != fuse.OK {
 		return 0, status
 	}
@@ -105,6 +107,7 @@ func (wfs *WFS) SetXAttr(cancel <-chan struct{}, input *fuse.SetXAttrIn, attr st
 	}
 
 	path, fh, entry, status := wfs.maybeReadEntry(input.NodeId)
+	glog.V(4).Infof("******** SetXAttr:" + entry.GetName())
 	if status != fuse.OK {
 		return status
 	}
@@ -151,6 +154,7 @@ func (wfs *WFS) ListXAttr(cancel <-chan struct{}, header *fuse.InHeader, dest []
 	}
 
 	_, _, entry, status := wfs.maybeReadEntry(header.NodeId)
+	glog.V(4).Infof("******** ListXAttr:" + entry.GetName())
 	if status != fuse.OK {
 		return 0, status
 	}
@@ -188,6 +192,7 @@ func (wfs *WFS) RemoveXAttr(cancel <-chan struct{}, header *fuse.InHeader, attr 
 		return fuse.EINVAL
 	}
 	path, fh, entry, status := wfs.maybeReadEntry(header.NodeId)
+	glog.V(4).Infof("******** RemoveXAttr:" + entry.GetName())
 	if status != fuse.OK {
 		return status
 	}
