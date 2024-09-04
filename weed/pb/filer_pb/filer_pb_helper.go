@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -109,6 +110,7 @@ func AfterEntryDeserialization(chunks []*FileChunk) {
 }
 
 func CreateEntry(client SeaweedFilerClient, request *CreateEntryRequest) error {
+	glog.V(4).Infof("******** create Entry" + string(debug.Stack()))
 	resp, err := client.CreateEntry(context.Background(), request)
 	if err != nil {
 		glog.V(1).Infof("create entry %s/%s %v: %v", request.Directory, request.Entry.Name, request.OExcl, err)
@@ -122,6 +124,7 @@ func CreateEntry(client SeaweedFilerClient, request *CreateEntryRequest) error {
 }
 
 func UpdateEntry(client SeaweedFilerClient, request *UpdateEntryRequest) error {
+	glog.V(4).Infof("******** update Entry" + string(debug.Stack()))
 	_, err := client.UpdateEntry(context.Background(), request)
 	if err != nil {
 		glog.V(1).Infof("update entry %s/%s :%v", request.Directory, request.Entry.Name, err)
